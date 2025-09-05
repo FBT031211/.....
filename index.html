@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <link rel="icon" href="https://iili.io/KdfLmDx.png">
+  <meta charset="UTF-8">
+  <title>XF</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0d1f0d; color: #e0f2e0; padding: 20px; }
+    h2 { color: #4CAF50; text-shadow: 0 0 8px #4CAF50; }
+    textarea, input { width: 100%; margin-bottom: 10px; padding: 10px; font-size: 16px; background: #1b3b1b; color: #e0f2e0; border: 2px solid #4CAF50; border-radius: 8px; outline: none; box-shadow: 0 0 5px #4CAF50; }
+    textarea { height: 120px; }
+    input { height: 40px; }
+    button { margin: 5px; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.3s ease; }
+    #output { background: #1b3b1b; color: #a8e6a1; padding: 10px; min-height: 60px; border-radius: 6px; border: 2px solid #4CAF50; margin-top: 10px; box-shadow: 0 0 10px #2e7d32; white-space: pre-wrap; word-wrap: break-word; }
+    .encrypt { background: #4CAF50; color: white; }
+    .decrypt { background: #2e7d32; color: white; }
+    .copy { background: #66bb6a; color: white; }
+    button:hover { box-shadow: 0 0 12px #4CAF50, 0 0 20px #66bb6a; transform: scale(1.05); }
+    .hint { font-size: 12px; color: #9ad89e; margin: 6px 0 12px; }
+  </style>
+</head>
+<body>
+  <h2>🔐 Catatan Rahasia</h2>
+  <textarea id="inputText" placeholder="Tulis catatanmu di sini..."></textarea>
+  <input id="passwordInput" type="text" placeholder="Masukkan password di sini">
+  
+  <button class="encrypt" onclick="encryptText()">Encrypt</button>
+  <button class="decrypt" onclick="decryptText()">Decrypt</button>
+  <button class="copy" onclick="copyText()">Copy</button>
+  
+  <h3>Hasil:</h3>
+  <div id="output"></div>
+
+<script>
+  // ================================
+  // 21 SISTEM SUBSTITUSI OTOMATIS
+  // ================================
+  const ASCII_START = 32, ASCII_END = 127;
+  const SIZE = ASCII_END - ASCII_START + 1;
+  const INPUT = Array.from({length: SIZE}, (_,i)=>String.fromCharCode(ASCII_START+i));
+
+  function rotate(arr, k){
+    const n = arr.length; k = ((k % n) + n) % n;
+    return arr.slice(n-k).concat(arr.slice(0, n-k));
+  }
+
+  function lightScramble(arr, step){
+    const a = arr.slice();
+    for(let i = step; i+1 < a.length; i += (step+7)){
+      const j = (i + 3) % a.length;
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function makePermutationForSystem(sysIndex){
+    const offset = (7 + sysIndex * 31) % SIZE;
+    let perm = rotate(INPUT, offset);
+    perm = lightScramble(perm, (3 + sysIndex) % 11 + 2);
+    return perm;
+  }
+
+  // Daftar password custom
+  const customPasswords = [
+    "kgyFBT9520","FR3N6Y0312","003112111","3","12","11","18","01","7","G","01112011","GSH","9016","7161","-","...","?","F","bylandlovelyn1F4","S","H"
+  ];
+
+  const systems = {};
+  const reverseSystems = {};
+
+  customPasswords.forEach((pw, idx) => {
+    const perm = makePermutationForSystem(idx+1);
+    const map = {};
+    const rev = {};
+    for(let k=0; k<SIZE; k++){
+      const code = ASCII_START + k;
+      const ch = perm[k];
+      map[code] = ch;
+      rev[ch] = String(code);
+    }
+    systems[pw] = map;
+    reverseSystems[pw] = rev;
+  });
+
+  // ==========================
+  // ENKRIPSI / DEKRIPSI
+  // ==========================
+  function getPassword(){
+    const pw = document.getElementById('passwordInput').value.trim();
+    if (!pw) { alert("⚠️ Password belum diisi!"); return null; }
+    if (!systems[pw]) { alert("❌ Password tidak dikenal!"); return null; }
+    return pw;
+  }
+
+  function encryptText(){
+    const text = document.getElementById('inputText').value;
+    const pw = getPassword(); if (!pw) return;
+    const map = systems[pw];
+    const out = Array.from(text).map(ch => map[ch.charCodeAt(0)] || ch).join('');
+    document.getElementById('output').innerText = out;
+  }
+
+  function decryptText(){
+    const text = document.getElementById('inputText').value;
+    const pw = getPassword(); if (!pw) return;
+    const rev = reverseSystems[pw];
+    const out = Array.from(text).map(ch => {
+      const code = rev[ch];
+      return code ? String.fromCharCode(Number(code)) : ch;
+    }).join('');
+    document.getElementById('output').innerText = out;
+  }
+
+  function copyText(){
+    const output = document.getElementById('output').innerText;
+    if (!output) { alert('⚠️ Tidak ada teks untuk dicopy!'); return; }
+    navigator.clipboard.writeText(output).then(()=>{ alert('✅ Teks berhasil dicopy!'); });
+  }
+</script>
+</body>
+</html>
